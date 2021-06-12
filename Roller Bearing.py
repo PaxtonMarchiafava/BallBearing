@@ -3,7 +3,7 @@
 
 import adsk.core, adsk.fusion, adsk.cam, traceback, math
 
-# get these as input. Math done as cm
+# get these as input. Units in cm, and radians
 insideRadius = 2.5
 horizontalThickness = 1
 vertThickness = 1
@@ -12,11 +12,11 @@ divotClearence = 0.05
 elevation = -0.2
 
 
+
 def run(context):
     ui = None
     try:
         app = adsk.core.Application.get()
-
         des = adsk.fusion.Design.cast(app.activeProduct)
 
         # Create a new component by creating an occurrence.
@@ -30,8 +30,6 @@ def run(context):
         home = adsk.core.Point3D.create(0, 0, 0) # create points to make lines
 
         bottomLeft = adsk.core.Point3D.create(insideRadius, 0, 0) # for outer box
-        bottomRight = adsk.core.Point3D.create(insideRadius + horizontalThickness, 0, 0)
-        topLeft = adsk.core.Point3D.create(insideRadius, -vertThickness, 0)
         topRight = adsk.core.Point3D.create(insideRadius + horizontalThickness, -vertThickness, 0)
 
         bottomMid = adsk.core.Point3D.create(insideRadius + horizontalThickness / 2, 0, 0) # for mid line and offsets
@@ -51,36 +49,29 @@ def run(context):
         sketch = sketches.add(xyPlane)
 
         sketch.sketchCurves.sketchLines.addByTwoPoints(home, bottomLeft) # home to bottom left corner
-        sketch.sketchCurves.sketchLines.addByTwoPoints(bottomLeft, bottomRight) # bottom left corner to bottom right corner
-        sketch.sketchCurves.sketchLines.addByTwoPoints(bottomLeft, topLeft) # bottom left corner to top left corner
-        sketch.sketchCurves.sketchLines.addByTwoPoints(topLeft, topRight) # top left corner to top right
-        sketch.sketchCurves.sketchLines.addByTwoPoints(bottomRight, topRight) # bottom right to top right
+        sketch.sketchCurves.sketchLines.addTwoPointRectangle(bottomLeft, topRight)  # rectangle for the outside shape
         sketch.sketchCurves.sketchLines.addByTwoPoints(bottomMid, topMid) # line down the middle for the clearence
-
-        revolveLine = sketch.sketchCurves.sketchLines.addByTwoPoints(home, revolvePoint) # revolve line
-
+        revolveLine = sketch.sketchCurves.sketchLines.addByTwoPoints(home, revolvePoint) # line used to revolve around
         sketch.sketchCurves.sketchCircles.addByCenterRadius(circleMid, holeRadius)
 
         objectCollection = adsk.core.ObjectCollection.create() # create and add a line to object collection
         objectCollection.add(sketch.sketchCurves.sketchLines.addByTwoPoints(bottomMid, topMid))
 
-        sketch.offset(objectCollection, adsk.core.Point3D.create(insideRadius + (horizontalThickness / 2) + divotClearence / 2, -vertThickness / 2, 0), divotClearence) # offset using object collection
+        # offset using object collection
+        sketch.offset(objectCollection, adsk.core.Point3D.create(insideRadius + (horizontalThickness / 2) + divotClearence / 2, -vertThickness / 2, 0), divotClearence)
         sketch.offset(objectCollection, adsk.core.Point3D.create(insideRadius + (horizontalThickness / 2) - divotClearence / 2, -vertThickness / 2, 0), divotClearence)
 
         sketch.sketchCurves.sketchLines.addByTwoPoints(leftUpper, circleLeftTop) # create elevation for assembly
         sketch.sketchCurves.sketchLines.addByTwoPoints(circleLeftTop, circleLeftBottom)
         sketch.sketchCurves.sketchLines.addByTwoPoints(circleLeftBottom, leftCircle)
 
-
-        
-        # revolve, 7 out, 5 in bottom, 4 in top
-        profile = sketch.profiles.item(4)
+        # revolve, 4 out, 7 bottom, 10 top
+        profile = sketch.profiles.item(10)
         profiles = adsk.core.ObjectCollection.create()
-        profiles.add(sketch.profiles.item(5))
+        profiles.add(sketch.profiles.item(4))
         profiles.add(sketch.profiles.item(7))
 
-        # Create an revolution input to be able to define the input needed for a revolution
-        # while specifying the profile and that a new component is to be created
+        # Select faces, State that we want a new body
         revolves = newComp.features.revolveFeatures
         revInput = revolves.createInput(profiles, revolveLine, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         revInputTop = revolves.createInput(profile, revolveLine, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
@@ -94,7 +85,6 @@ def run(context):
         revolves.add(revInput)
         revolves.add(revInputTop)
         
-
     except:
         if ui:
             ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
