@@ -3,7 +3,7 @@
 
 import adsk.core, adsk.fusion, adsk.cam, traceback, math
 
-# get these as input. Units in cm, and radians
+# Units in cm, and radians
 insideRadius = 2.5
 horizontalThickness = 1
 vertThickness = 1
