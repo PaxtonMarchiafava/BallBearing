@@ -1,7 +1,7 @@
 #Author-Paxton Marchiafava
 #Description-Generates a roller bearing with variable defined parameters
 
-import adsk.core, adsk.fusion, adsk.cam, traceback, math
+import adsk.core, adsk.fusion, traceback, math
 
 # Units in cm, and radians
 insideRadius = 2.5
